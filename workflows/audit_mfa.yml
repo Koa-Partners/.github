@@ -1,0 +1,35 @@
+name: "Weekly MFA Audit"
+on:
+    schedule:
+        - cron: "0 0 * * 1" # Every Monday at midnight
+    workflow_dispatch: # Allow manual run
+
+jobs:
+    audit:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Generate MFA Report
+              env:
+                  GH_TOKEN: ${{ secrets.ORG_AUDIT_TOKEN }}
+              run: |
+                  # Uses GitHub CLI to list members and their MFA status
+                  gh api -H "Accept: application/vnd.github+json" \
+                    /orgs/Koa-Partners/members?filter=2fa_disabled > mfa_off.json
+
+                  if [ "$(jq '. | length' mfa_off.json)" -eq "0" ]; then
+                    echo "All members have MFA enabled." > report.txt
+                  else
+                    echo "WARNING: MFA Disabled for these users:" > report.txt
+                    jq -r '.[].login' mfa_off.json >> report.txt
+                  fi
+
+            - name: Commit to Evidence Repo
+              uses: dmnemec/copy_file_to_another_repo_action@main
+              env:
+                  API_TOKEN_GITHUB: ${{ secrets.EVIDENCE_REPO_TOKEN }}
+              with:
+                  source_file: "report.txt"
+                  destination_repo: "Koa-Partners/compliance-evidence"
+                  destination_folder: "automated-evidence/mfa-reports"
+                  user_email: "bot@koapartnersllc.com"
+                  user_name: "Koa Compliance Bot"
