@@ -1,0 +1,36 @@
+name: License Check
+on:
+    workflow_call:
+        inputs:
+            package_manager:
+                description: Package manager type (npm, pip, go)
+                required: true
+                type: string
+
+jobs:
+    license-check:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: License Check (npm)
+              if: ${{ inputs.package_manager == 'npm' }}
+              run: |
+                  npx license-checker --onlyAllow \
+                    'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;CC0-1.0' \
+                    --excludePrivatePackages
+
+            - name: License Check (pip)
+              if: ${{ inputs.package_manager == 'pip' }}
+              run: |
+                  pip install pip-licenses
+                  pip-licenses --allow-only \
+                    "MIT;Apache Software License;BSD;ISC License" \
+                    --fail-on-violation
+
+            - name: License Check (go)
+              if: ${{ inputs.package_manager == 'go' }}
+              run: |
+                  go install github.com/google/go-licenses@latest
+                  go-licenses check ./... \
+                    --allowed_licenses=MIT,Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC
