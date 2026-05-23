@@ -10,11 +10,11 @@ Internal engineering repo for Koa Partners, LLC. Contains organization-wide comp
 
 | File                                                                           | Type                       | Purpose                                                                            |
 | ------------------------------------------------------------------------------ | -------------------------- | ---------------------------------------------------------------------------------- |
-| [`workflows/audit_mfa.yml`](workflows/audit_mfa.yml)                           | Scheduled (Mon 00:00 UTC)  | Weekly MFA enforcement audit; commits report to `Koa-Partners/compliance-evidence` |
-| [`workflows/reusable-codeql.yml`](workflows/reusable-codeql.yml)               | Reusable (`workflow_call`) | CodeQL SAST scan — JS / Python / Go / Java                                         |
-| [`workflows/reusable-checkov.yml`](workflows/reusable-checkov.yml)             | Reusable (`workflow_call`) | Checkov IaC scan against SOC 2 framework                                           |
-| [`workflows/reusable-gitleaks.yml`](workflows/reusable-gitleaks.yml)           | Reusable (`workflow_call`) | Gitleaks secret scan, full git history                                             |
-| [`workflows/reusable-license-check.yml`](workflows/reusable-license-check.yml) | Reusable (`workflow_call`) | Allowed-license enforcement for npm / pip / go                                     |
+| [`.github/workflows/audit_mfa.yml`](.github/workflows/audit_mfa.yml)                           | Scheduled (Mon 00:00 UTC)  | Weekly MFA enforcement audit; commits report to `Koa-Partners/compliance-evidence` |
+| [`.github/workflows/reusable-codeql.yml`](.github/workflows/reusable-codeql.yml)               | Reusable (`workflow_call`) | CodeQL SAST scan — JS / Python / Go / Java                                         |
+| [`.github/workflows/reusable-checkov.yml`](.github/workflows/reusable-checkov.yml)             | Reusable (`workflow_call`) | Checkov IaC scan against SOC 2 framework                                           |
+| [`.github/workflows/reusable-gitleaks.yml`](.github/workflows/reusable-gitleaks.yml)           | Reusable (`workflow_call`) | Gitleaks secret scan, full git history                                             |
+| [`.github/workflows/reusable-license-check.yml`](.github/workflows/reusable-license-check.yml) | Reusable (`workflow_call`) | Allowed-license enforcement for npm / pip / go                                     |
 
 ---
 
@@ -27,7 +27,7 @@ Reference any workflow from a consumer repo with `uses:`. Pin to a tag once we c
 ```yaml
 jobs:
   codeql:
-    uses: Koa-Partners/.github/workflows/reusable-codeql.yml@main
+    uses: Koa-Partners/.github/.github/workflows/reusable-codeql.yml@main
     with:
       language: javascript # javascript | python | go | java
 ```
@@ -37,7 +37,7 @@ jobs:
 ```yaml
 jobs:
   iac:
-    uses: Koa-Partners/.github/workflows/reusable-checkov.yml@main
+    uses: Koa-Partners/.github/.github/workflows/reusable-checkov.yml@main
     with:
       terraform_directory: infra/terraform/ # defaults to terraform/
 ```
@@ -49,7 +49,7 @@ Hard-fails on any finding (`soft_fail: false`). Framework is fixed to `soc2`.
 ```yaml
 jobs:
   secrets:
-    uses: Koa-Partners/.github/workflows/reusable-gitleaks.yml@main
+    uses: Koa-Partners/.github/.github/workflows/reusable-gitleaks.yml@main
     secrets: inherit
 ```
 
@@ -60,7 +60,7 @@ Full-history scan (`fetch-depth: 0`). `secrets: inherit` is required so `GITLEAK
 ```yaml
 jobs:
   licenses:
-    uses: Koa-Partners/.github/workflows/reusable-license-check.yml@main
+    uses: Koa-Partners/.github/.github/workflows/reusable-license-check.yml@main
     with:
       package_manager: npm # npm | pip | go
 ```
