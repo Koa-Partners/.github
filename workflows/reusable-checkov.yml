@@ -1,0 +1,21 @@
+name: Checkov IaC Scan
+on:
+    workflow_call:
+        inputs:
+            terraform_directory:
+                description: Path to Terraform directory
+                default: terraform/
+                required: false
+                type: string
+
+jobs:
+    checkov:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - name: Checkov IaC Scan
+              uses: bridgecrewio/checkov-action@master
+              with:
+                  directory: ${{ inputs.terraform_directory }}
+                  framework: soc2
+                  soft_fail: false
