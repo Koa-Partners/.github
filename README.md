@@ -94,7 +94,6 @@ Feeds the SOC 2 access-control evidence trail. Do not disable without coordinati
 | --------------------- | ----------------------- | -------------- | --------------------------------------------------- |
 | `ORG_AUDIT_TOKEN`     | `audit_mfa.yml`         | Org-level      | PAT with `read:org`; 90-day rotation                |
 | `EVIDENCE_REPO_TOKEN` | `audit_mfa.yml`         | Org-level      | PAT with `contents: write` on `compliance-evidence`; 90-day rotation |
-| `GITHUB_TOKEN`        | `reusable-gitleaks.yml` | Auto-provided  | —                                                   |
 
 No license is required for Gitleaks. Consumer workflows do not need `secrets: inherit`.
 
