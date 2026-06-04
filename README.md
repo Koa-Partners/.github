@@ -13,7 +13,7 @@ Internal engineering repo for Koa Partners, LLC. Contains organization-wide comp
 | [`.github/workflows/audit_mfa.yml`](.github/workflows/audit_mfa.yml)                           | Scheduled (Mon 00:00 UTC)  | Weekly MFA enforcement audit; commits report to `Koa-Partners/compliance-evidence` |
 | [`.github/workflows/reusable-codeql.yml`](.github/workflows/reusable-codeql.yml)               | Reusable (`workflow_call`) | CodeQL SAST scan — JS / Python / Go / Java                                         |
 | [`.github/workflows/reusable-checkov.yml`](.github/workflows/reusable-checkov.yml)             | Reusable (`workflow_call`) | Checkov IaC scan against SOC 2 framework                                           |
-| [`.github/workflows/reusable-gitleaks.yml`](.github/workflows/reusable-gitleaks.yml)           | Reusable (`workflow_call`) | Gitleaks secret scan, full git history                                             |
+| [`.github/workflows/reusable-gitleaks.yml`](.github/workflows/reusable-gitleaks.yml)           | Reusable (`workflow_call`) | Gitleaks secret scan, full git history; results uploaded to Security tab as SARIF  |
 | [`.github/workflows/reusable-license-check.yml`](.github/workflows/reusable-license-check.yml) | Reusable (`workflow_call`) | Allowed-license enforcement for npm / pip / go                                     |
 
 ---
@@ -50,10 +50,9 @@ Hard-fails on any finding (`soft_fail: false`). Framework is fixed to `soc2`.
 jobs:
   secrets:
     uses: Koa-Partners/.github/.github/workflows/reusable-gitleaks.yml@main
-    secrets: inherit
 ```
 
-Full-history scan (`fetch-depth: 0`). `secrets: inherit` is required so `GITLEAKS_LICENSE` propagates.
+Full-history scan (`fetch-depth: 0`). Runs the Gitleaks CLI directly — no license required. Findings are uploaded to the repo's **Security → Code scanning** tab as SARIF. The job fails if any secrets are detected.
 
 ### License Check
 
@@ -93,12 +92,11 @@ Feeds the SOC 2 access-control evidence trail. Do not disable without coordinati
 
 | Secret                | Used by                 | Where it's set | Notes                                               |
 | --------------------- | ----------------------- | -------------- | --------------------------------------------------- |
-| `ORG_AUDIT_TOKEN`     | `audit_mfa.yml`         | This repo      | PAT with `read:org`                                 |
-| `EVIDENCE_REPO_TOKEN` | `audit_mfa.yml`         | This repo      | PAT with `contents: write` on `compliance-evidence` |
-| `GITLEAKS_LICENSE`    | `reusable-gitleaks.yml` | Org-level      | Gitleaks commercial license                         |
+| `ORG_AUDIT_TOKEN`     | `audit_mfa.yml`         | Org-level      | PAT with `read:org`; 90-day rotation                |
+| `EVIDENCE_REPO_TOKEN` | `audit_mfa.yml`         | Org-level      | PAT with `contents: write` on `compliance-evidence`; 90-day rotation |
 | `GITHUB_TOKEN`        | `reusable-gitleaks.yml` | Auto-provided  | —                                                   |
 
-Consumer workflows calling the reusable Gitleaks workflow must use `secrets: inherit`.
+No license is required for Gitleaks. Consumer workflows do not need `secrets: inherit`.
 
 ---
 
