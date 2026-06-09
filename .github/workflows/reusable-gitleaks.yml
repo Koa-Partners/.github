@@ -33,11 +33,19 @@ jobs:
                     --report-path gitleaks.sarif
 
             - name: Upload SARIF to GitHub Security tab
-              uses: github/codeql-action/upload-sarif@v4
-              with:
-                  sarif_file: gitleaks.sarif
-                  ref: ${{ github.ref }}
-                  sha: ${{ github.sha }}
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  REPO: ${{ github.repository }}
+                  COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+                  REF: ${{ github.ref }}
+              run: |
+                  SARIF=$(gzip -c gitleaks.sarif | base64 -w0)
+                  gh api \
+                    --method POST \
+                    "/repos/${REPO}/code-scanning/sarifs" \
+                    -f "commit_sha=${COMMIT_SHA}" \
+                    -f "ref=${REF}" \
+                    -f "sarif=${SARIF}"
 
             - name: Fail if secrets detected
               if: steps.gitleaks.outcome == 'failure'
