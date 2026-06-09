@@ -37,7 +37,7 @@ jobs:
                   GH_TOKEN: ${{ github.token }}
                   REPO: ${{ github.repository }}
                   COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-                  REF: ${{ github.ref }}
+                  REF: ${{ github.event.pull_request.number != '' && format('refs/pull/{0}/head', github.event.pull_request.number) || github.ref }}
               run: |
                   SARIF=$(gzip -c gitleaks.sarif | base64 -w0)
                   gh api \
