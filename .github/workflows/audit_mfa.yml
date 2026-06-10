@@ -23,10 +23,18 @@ jobs:
                     jq -r '.[].login' mfa_off.json >> report.txt
                   fi
 
+            - name: Generate App Token
+              id: app-token
+              uses: actions/create-github-app-token@v1
+              with:
+                  app-id: ${{ secrets.COMPLIANCE_BOT_APP_ID }}
+                  private-key: ${{ secrets.COMPLIANCE_BOT_PRIVATE_KEY }}
+                  repositories: compliance-evidence
+
             - name: Commit to Evidence Repo
               uses: dmnemec/copy_file_to_another_repo_action@main
               env:
-                  API_TOKEN_GITHUB: ${{ secrets.EVIDENCE_REPO_TOKEN }}
+                  API_TOKEN_GITHUB: ${{ steps.app-token.outputs.token }}
               with:
                   source_file: "report.txt"
                   destination_repo: "Koa-Partners/compliance-evidence"
