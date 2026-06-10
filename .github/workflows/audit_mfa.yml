@@ -33,20 +33,27 @@ jobs:
 
             - name: Commit to Evidence Repo
               env:
-                  TOKEN: ${{ steps.app-token.outputs.token }}
+                  GH_TOKEN: ${{ steps.app-token.outputs.token }}
               run: |
-                  git config --global user.email "bot@koapartnersllc.com"
-                  git config --global user.name "Koa Compliance Bot"
-                  git clone --single-branch --branch main \
-                    "https://x-access-token:${TOKEN}@github.com/Koa-Partners/compliance-evidence.git" \
-                    /tmp/evidence-repo
-                  mkdir -p /tmp/evidence-repo/automated-evidence/mfa-reports
-                  cp report.txt /tmp/evidence-repo/automated-evidence/mfa-reports/
-                  cd /tmp/evidence-repo
-                  git add .
-                  if git diff --staged --quiet; then
-                    echo "No changes to commit"
+                  FILE_PATH="automated-evidence/mfa-reports/report.txt"
+                  CONTENT=$(base64 -w 0 report.txt)
+                  DATE=$(date -u +%Y-%m-%d)
+
+                  # Get current file SHA if it exists (required for updates)
+                  CURRENT_SHA=$(gh api "repos/Koa-Partners/compliance-evidence/contents/${FILE_PATH}" \
+                    --jq '.sha' 2>/dev/null || echo "")
+
+                  if [ -n "$CURRENT_SHA" ]; then
+                    gh api "repos/Koa-Partners/compliance-evidence/contents/${FILE_PATH}" \
+                      --method PUT \
+                      -f message="MFA audit report ${DATE}" \
+                      -f content="${CONTENT}" \
+                      -f sha="${CURRENT_SHA}" \
+                      -f branch=main
                   else
-                    git commit -m "MFA audit report $(date -u +%Y-%m-%d)"
-                    git push
+                    gh api "repos/Koa-Partners/compliance-evidence/contents/${FILE_PATH}" \
+                      --method PUT \
+                      -f message="MFA audit report ${DATE}" \
+                      -f content="${CONTENT}" \
+                      -f branch=main
                   fi
