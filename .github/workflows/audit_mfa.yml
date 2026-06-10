@@ -32,12 +32,21 @@ jobs:
                   repositories: compliance-evidence
 
             - name: Commit to Evidence Repo
-              uses: dmnemec/copy_file_to_another_repo_action@main
               env:
-                  API_TOKEN_GITHUB: ${{ steps.app-token.outputs.token }}
-              with:
-                  source_file: "report.txt"
-                  destination_repo: "Koa-Partners/compliance-evidence"
-                  destination_folder: "automated-evidence/mfa-reports"
-                  user_email: "bot@koapartnersllc.com"
-                  user_name: "Koa Compliance Bot"
+                  TOKEN: ${{ steps.app-token.outputs.token }}
+              run: |
+                  git config --global user.email "bot@koapartnersllc.com"
+                  git config --global user.name "Koa Compliance Bot"
+                  git clone --single-branch --branch main \
+                    "https://x-access-token:${TOKEN}@github.com/Koa-Partners/compliance-evidence.git" \
+                    /tmp/evidence-repo
+                  mkdir -p /tmp/evidence-repo/automated-evidence/mfa-reports
+                  cp report.txt /tmp/evidence-repo/automated-evidence/mfa-reports/
+                  cd /tmp/evidence-repo
+                  git add .
+                  if git diff --staged --quiet; then
+                    echo "No changes to commit"
+                  else
+                    git commit -m "MFA audit report $(date -u +%Y-%m-%d)"
+                    git push
+                  fi
