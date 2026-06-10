@@ -7,6 +7,7 @@ jobs:
         runs-on: ubuntu-latest
         permissions:
             security-events: write
+            actions: read
             contents: read
         steps:
             - uses: actions/checkout@v4
@@ -15,7 +16,11 @@ jobs:
 
             - name: Install Gitleaks
               run: |
-                  curl -sSL https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks_linux_x64.tar.gz \
+                  VERSION=$(curl -sSL https://api.github.com/repos/gitleaks/gitleaks/releases/latest \
+                    | grep '"tag_name"' \
+                    | sed -E 's/.*"v([^"]+)".*/\1/')
+                  curl -sSL \
+                    "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz" \
                     | tar -xz -C /usr/local/bin gitleaks
 
             - name: Gitleaks Scan
@@ -28,9 +33,19 @@ jobs:
                     --report-path gitleaks.sarif
 
             - name: Upload SARIF to GitHub Security tab
-              uses: github/codeql-action/upload-sarif@v3
-              with:
-                  sarif_file: gitleaks.sarif
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  REPO: ${{ github.repository }}
+                  COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+                  REF: ${{ github.event.pull_request.number != '' && format('refs/pull/{0}/head', github.event.pull_request.number) || github.ref }}
+              run: |
+                  SARIF=$(gzip -c gitleaks.sarif | base64 -w0)
+                  gh api \
+                    --method POST \
+                    "/repos/${REPO}/code-scanning/sarifs" \
+                    -f "commit_sha=${COMMIT_SHA}" \
+                    -f "ref=${REF}" \
+                    -f "sarif=${SARIF}"
 
             - name: Fail if secrets detected
               if: steps.gitleaks.outcome == 'failure'

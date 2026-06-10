@@ -17,5 +17,5 @@ jobs:
               uses: bridgecrewio/checkov-action@master
               with:
                   directory: ${{ inputs.terraform_directory }}
-                  framework: soc2
+                  framework: terraform
                   soft_fail: false
