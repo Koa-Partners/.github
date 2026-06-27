@@ -23,10 +23,13 @@ jobs:
             - name: License Check (pip)
               if: ${{ inputs.package_manager == 'pip' }}
               run: |
-                  pip install pip-licenses
+                  # Pin pip-licenses: the unpinned install drifted to 5.x, which
+                  # dropped the --fail-on-violation flag and broke this step.
+                  pip install "pip-licenses==5.5.5"
+                  # --allow-only already exits non-zero when a package's license
+                  # is outside the allow list, so no extra fail flag is needed.
                   pip-licenses --allow-only \
-                    "MIT;Apache Software License;BSD;ISC License" \
-                    --fail-on-violation
+                    "MIT;Apache Software License;BSD;ISC License"
 
             - name: License Check (go)
               if: ${{ inputs.package_manager == 'go' }}

@@ -15,13 +15,31 @@ jobs:
                   fetch-depth: 0
 
             - name: Install Gitleaks
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  # Known-good fallback used only if the latest-release lookup fails.
+                  GITLEAKS_FALLBACK_VERSION: "8.18.4"
               run: |
-                  VERSION=$(curl -sSL https://api.github.com/repos/gitleaks/gitleaks/releases/latest \
+                  set -euo pipefail
+                  # Resolve the latest release, authenticated so the lookup isn't
+                  # rate-limited (the unauthenticated call returned an error page,
+                  # yielding an empty version and a non-gzip download that broke
+                  # `tar`). Fall back to a pinned version if the lookup fails.
+                  VERSION=$(curl -sSL -H "Authorization: Bearer ${GH_TOKEN}" \
+                    https://api.github.com/repos/gitleaks/gitleaks/releases/latest \
                     | grep '"tag_name"' \
-                    | sed -E 's/.*"v([^"]+)".*/\1/')
-                  curl -sSL \
+                    | sed -E 's/.*"v([^"]+)".*/\1/' || true)
+                  if [ -z "${VERSION}" ]; then
+                    VERSION="${GITLEAKS_FALLBACK_VERSION}"
+                  fi
+                  echo "Installing gitleaks ${VERSION}"
+                  # --fail so a non-200 response errors here instead of piping an
+                  # HTML/JSON error page into tar; download to a file, then extract.
+                  curl -sSL --fail \
                     "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz" \
-                    | tar -xz -C /usr/local/bin gitleaks
+                    -o /tmp/gitleaks.tar.gz
+                  tar -xzf /tmp/gitleaks.tar.gz -C /usr/local/bin gitleaks
+                  gitleaks version
 
             - name: Gitleaks Scan
               id: gitleaks
