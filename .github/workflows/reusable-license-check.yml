@@ -6,6 +6,16 @@ on:
                 description: Package manager type (npm, pip, go)
                 required: true
                 type: string
+            requirements_file:
+                description: Path to the pip requirements file to scan (pip only)
+                required: false
+                type: string
+                default: requirements.txt
+            license_ignore_packages:
+                description: Space-separated package names to exclude from the pip license scan (pip only)
+                required: false
+                type: string
+                default: ""
 
 jobs:
     license-check:
@@ -22,14 +32,34 @@ jobs:
 
             - name: License Check (pip)
               if: ${{ inputs.package_manager == 'pip' }}
+              env:
+                  REQ_FILE: ${{ inputs.requirements_file }}
+                  IGNORE_PACKAGES: ${{ inputs.license_ignore_packages }}
               run: |
-                  # Pin pip-licenses: the unpinned install drifted to 5.x, which
-                  # dropped the --fail-on-violation flag and broke this step.
-                  pip install "pip-licenses==5.5.5"
-                  # --allow-only already exits non-zero when a package's license
-                  # is outside the allow list, so no extra fail flag is needed.
-                  pip-licenses --allow-only \
-                    "MIT;Apache Software License;BSD;ISC License"
+                  set -euo pipefail
+                  # Scan THIS repo's declared dependencies, not the runner's
+                  # ambient Python packages: install them into a throwaway venv and
+                  # point pip-licenses at it.
+                  python -m venv .license-venv
+                  .license-venv/bin/python -m pip install --quiet --upgrade pip
+                  if [ -f "${REQ_FILE}" ]; then
+                    .license-venv/bin/python -m pip install --quiet -r "${REQ_FILE}"
+                  else
+                    echo "::warning::${REQ_FILE} not found; license scan will be empty"
+                  fi
+                  # pip-licenses pinned (5.x dropped --fail-on-violation); run it from
+                  # the runner env but inspect the venv via --python. --allow-only
+                  # already exits non-zero on a disallowed license.
+                  pip install --quiet "pip-licenses==5.5.5"
+                  IGNORE_ARG=""
+                  if [ -n "${IGNORE_PACKAGES}" ]; then
+                    IGNORE_ARG="--ignore-packages ${IGNORE_PACKAGES}"
+                  fi
+                  # Allow-list covers the permissive license names pip-licenses
+                  # emits across SPDX ids, Trove classifiers, and OR-expressions.
+                  pip-licenses --python .license-venv/bin/python ${IGNORE_ARG} \
+                    --allow-only \
+                    "MIT;MIT License;BSD License;BSD;BSD-2-Clause;BSD-3-Clause;3-Clause BSD License;Apache Software License;Apache-2.0;Apache-2.0 OR BSD-2-Clause;Apache-2.0 OR BSD-3-Clause;ISC License;ISC License (ISCL);ISC;Python Software Foundation License;PSF-2.0;Mozilla Public License 2.0 (MPL 2.0);MPL-2.0"
 
             - name: License Check (go)
               if: ${{ inputs.package_manager == 'go' }}
