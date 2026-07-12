@@ -59,9 +59,11 @@ jobs:
                   # emits across SPDX ids, Trove classifiers, and OR-expressions.
                   # MIT-0 (MIT No Attribution) is strictly more permissive than MIT
                   # and is emitted by common transitive deps (e.g. cffi, scramp).
+                  # MIT-CMU (the historical HPND/PIL license) is a permissive,
+                  # OSI-approved MIT variant emitted by Pillow (PEP 639 expression).
                   pip-licenses --python .license-venv/bin/python ${IGNORE_ARG} \
                     --allow-only \
-                    "MIT;MIT License;MIT-0;MIT No Attribution License (MIT-0);BSD License;BSD;BSD-2-Clause;BSD-3-Clause;3-Clause BSD License;Apache Software License;Apache-2.0;Apache-2.0 OR BSD-2-Clause;Apache-2.0 OR BSD-3-Clause;ISC License;ISC License (ISCL);ISC;Python Software Foundation License;PSF-2.0;Mozilla Public License 2.0 (MPL 2.0);MPL-2.0"
+                    "MIT;MIT License;MIT-0;MIT No Attribution License (MIT-0);MIT-CMU;MIT-CMU License;BSD License;BSD;BSD-2-Clause;BSD-3-Clause;3-Clause BSD License;Apache Software License;Apache-2.0;Apache-2.0 OR BSD-2-Clause;Apache-2.0 OR BSD-3-Clause;ISC License;ISC License (ISCL);ISC;Python Software Foundation License;PSF-2.0;Mozilla Public License 2.0 (MPL 2.0);MPL-2.0"
 
             - name: License Check (go)
               if: ${{ inputs.package_manager == 'go' }}
