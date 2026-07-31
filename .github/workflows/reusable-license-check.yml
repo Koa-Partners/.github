@@ -26,8 +26,15 @@ jobs:
             - name: License Check (npm)
               if: ${{ inputs.package_manager == 'npm' }}
               run: |
+                  # UNLICENSED is the standard SPDX identifier for "proprietary,
+                  # all rights reserved" -- covers this repo's own package.json
+                  # when it's published to a private/internal registry rather
+                  # than marked npm-private (which --excludePrivatePackages
+                  # already handles, but npm hard-blocks `npm publish` on any
+                  # package marked private, so internal packages that need to
+                  # publish can't use that route).
                   npx license-checker --onlyAllow \
-                    'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;CC0-1.0' \
+                    'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;CC0-1.0;UNLICENSED' \
                     --excludePrivatePackages
 
             - name: License Check (pip)
