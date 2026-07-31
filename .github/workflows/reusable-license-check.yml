@@ -6,6 +6,11 @@ on:
                 description: Package manager type (npm, pip, go)
                 required: true
                 type: string
+            npm_exclude_packages:
+                description: Semicolon-separated name@version entries to exclude from the npm license scan (npm only)
+                required: false
+                type: string
+                default: ""
             requirements_file:
                 description: Path to the pip requirements file to scan (pip only)
                 required: false
@@ -25,17 +30,32 @@ jobs:
 
             - name: License Check (npm)
               if: ${{ inputs.package_manager == 'npm' }}
+              env:
+                  NPM_EXCLUDE_PACKAGES: ${{ inputs.npm_exclude_packages }}
               run: |
-                  # UNLICENSED is the standard SPDX identifier for "proprietary,
-                  # all rights reserved" -- covers this repo's own package.json
-                  # when it's published to a private/internal registry rather
-                  # than marked npm-private (which --excludePrivatePackages
-                  # already handles, but npm hard-blocks `npm publish` on any
-                  # package marked private, so internal packages that need to
-                  # publish can't use that route).
+                  set -euo pipefail
+                  # license-checker's --onlyAllow runs real SPDX expression
+                  # satisfaction (spdx-satisfies), not string matching -- so
+                  # adding "UNLICENSED" to this list does nothing (it isn't a
+                  # valid SPDX expression, and license-checker reports
+                  # UNLICENSED packages as "UNKNOWN" regardless). A repo whose
+                  # own package.json is "UNLICENSED" (proprietary, published to
+                  # a private registry rather than npm-private -- npm hard-
+                  # blocks `npm publish` on private:true, so
+                  # --excludePrivatePackages doesn't apply) must pass its own
+                  # exact name@version via npm_exclude_packages instead.
+                  #
+                  # Python-2.0 (PSF license) is permissive and already accepted
+                  # in the pip variant of this check below; it shows up here
+                  # transitively via eslint -> @eslint/eslintrc -> js-yaml ->
+                  # argparse, which is common enough to allow at the shared level.
+                  EXCLUDE_ARG=""
+                  if [ -n "${NPM_EXCLUDE_PACKAGES}" ]; then
+                    EXCLUDE_ARG="--excludePackages ${NPM_EXCLUDE_PACKAGES}"
+                  fi
                   npx license-checker --onlyAllow \
-                    'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;CC0-1.0;UNLICENSED' \
-                    --excludePrivatePackages
+                    'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;CC0-1.0;Python-2.0' \
+                    --excludePrivatePackages ${EXCLUDE_ARG}
 
             - name: License Check (pip)
               if: ${{ inputs.package_manager == 'pip' }}
